@@ -48,12 +48,16 @@ git clone [https://github.com/applejuice093/Stack-Showcase-Chess.git](https://gi
 cd Stack-Showcase-Chess
 ```
 ### 2. Install dependencies
+```
 npm install
 # or
 yarn install
+```
 
 ### 3. Run the development server
+```
 npm run dev
+```
 
 ### 📂 Project Structure
 ```
