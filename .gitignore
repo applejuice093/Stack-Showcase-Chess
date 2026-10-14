@@ -12,6 +12,7 @@
 
 # testing
 /coverage
+*.lcov
 
 # next.js
 /.next/
@@ -19,10 +20,12 @@
 
 # production
 /build
+/dist
 
 # misc
 .DS_Store
 *.pem
+Thumbs.db
 
 # debug
 npm-debug.log*
@@ -30,8 +33,10 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# env files — keep examples trackable
+.env
+.env.*
+!.env.example
 
 # vercel
 .vercel
@@ -40,6 +45,14 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Documentation files - DO NOT UPLOAD TO GITHUB
+# vitest / editor
+.vitest/
+.idea/
+.vscode/
+*.swp
+
+# Allow project docs (README + docs/) while ignoring other ad-hoc markdown dumps
 *.md
 !README.md
+!docs/
+!docs/**/*.md

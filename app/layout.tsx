@@ -13,8 +13,18 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI Chess Game",
-  description: "Play chess against an AI opponent",
+  title: "Stack-Showcase-Chess | LIFO move history demo",
+  description:
+    "Play chess against a simple AI while watching every ply push and pop on a move stack — a Next.js teaching demo of LIFO data structures.",
+  applicationName: "Stack-Showcase-Chess",
+  keywords: [
+    "chess",
+    "stack",
+    "LIFO",
+    "data structures",
+    "Next.js",
+    "TypeScript",
+  ],
 };
 
 export default function RootLayout({

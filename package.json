@@ -1,12 +1,18 @@
 {
-  "name": "my-app",
+  "name": "stack-showcase-chess",
   "version": "0.1.0",
   "private": true,
+  "description": "Next.js chess demo that showcases stack (LIFO) move history with a simple AI opponent",
+  "engines": {
+    "node": ">=18.18.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "framer-motion": "^12.23.25",
@@ -22,6 +28,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.0.7",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.7"
   }
 }

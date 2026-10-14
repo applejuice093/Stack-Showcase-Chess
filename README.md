@@ -1,74 +1,108 @@
-# ♟️ Stack-Showcase-Chess
+# Stack-Showcase-Chess
 
 [![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 
-A high-performance Chess engine engineered to demonstrate the utility of **Stack Data Structures** in managing complex game states, move history, and algorithmic backtracking.
+A Next.js chess demo that teaches **stack (LIFO) data structures** through playable move history. Every legal ply is **pushed** onto a move stack; **Undo** **pops** the top ply and restores the prior board. A shallow heuristic AI plays Black so you can watch pushes accumulate in the sidebar.
+
+> This is a teaching showcase, not a full FIDE rules engine. Castling and en passant are not implemented yet (types leave room for them). Pawn promotion, check, checkmate, and stalemate are supported.
 
 ---
 
-## 🚀 The Core Concept: Why Stacks?
+## Why stacks?
 
-In chess programming, tracking the progression of a game is just as vital as calculating the next move. This project utilizes a **Last-In, First-Out (LIFO)** approach to handle the "timeline" of the match.
+Chess timelines are naturally LIFO when players undo:
 
-### 🧠 Implementation Details
-* **Move History:** Every legal move is pushed onto a `historyStack`. This allows for a linear record of the game that is memory-efficient and easy to traverse.
-* **Undo/Redo System:** * **Undo:** Pops the current state from the `historyStack` and pushes it onto a `redoStack`.
-    * **Redo:** Pops from the `redoStack` and pushes back onto the `historyStack`.
-* **State-Space Management:** During AI pathfinding, stacks are used to manage board evaluations, ensuring the engine can efficiently backtrack during recursive searches.
+| Operation | Chess action | Stack call |
+| :--- | :--- | :--- |
+| Play a move | Apply ply, flip turn | `push(move)` |
+| Undo | Restore captured piece / from-square | `pop()` |
+| Inspect latest | Highlight TOP in the sidebar | `peek()` |
 
----
-
-## ✨ Features
-
-- **Functional AI Engine:** Play against a bot that evaluates positions and responds in real-time.
-- **State Persistence:** Full support for complex chess rules including castling, en passant, and pawn promotions.
-- **Robust Undo/Redo:** Seamlessly navigate back to any point in the game without breaking the engine's logic.
-- **Modern UI:** A clean, responsive interface built with Next.js and Tailwind CSS.
+The React UI keeps `Move[]` in state for re-renders; `lib/stack/MoveStack` wraps that array with an explicit ADT used by tests and the sidebar’s top-first view. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full map.
 
 ---
 
-## 🛠️ Tech Stack
+## Features
 
-| Tool | Usage |
+- Playable board (you = White) with legal-move highlights
+- Black AI that prefers captures, with a short “thinking” delay
+- Live **Move Stack** panel (TOP marker, algebraic squares, captures)
+- Undo (pop) and Reset
+- Pawn promotion picker
+- Check / checkmate / stalemate detection
+- Pure TypeScript engine under `lib/` with unit tests (`npm test`)
+
+---
+
+## Tech stack
+
+| Tool | Role |
 | :--- | :--- |
-| **Next.js 14+** | Application framework and routing |
-| **TypeScript** | Type-safe chess logic and state management |
-| **Tailwind CSS** | Utility-first styling for the game board and UI |
-| **PostCSS** | Advanced CSS processing |
+| **Next.js 16** (App Router) | UI shell and routing |
+| **React 19 + TypeScript** | Board UI and typed engine |
+| **Tailwind CSS 4** | Layout and theming |
+| **Framer Motion** | Light square / stack animations |
+| **Vitest** | Unit tests for stack + chess logic |
+
+**Node:** `>=18.18.0` (see `package.json` `engines`)
+
+No environment variables are required for local play.
 
 ---
 
-## 📦 Getting Started
+## Getting started
 
-### 1. Clone the repository
 ```bash
-git clone [https://github.com/applejuice093/Stack-Showcase-Chess.git](https://github.com/applejuice093/Stack-Showcase-Chess.git)
+git clone https://github.com/applejuice093/Stack-Showcase-Chess.git
 cd Stack-Showcase-Chess
-```
-### 2. Install dependencies
-```
 npm install
-# or
-yarn install
-```
-
-### 3. Run the development server
-```
 npm run dev
 ```
 
-### 📂 Project Structure
-```
-├── app/              # Next.js App Router logic
-├── public/           # Assets (Chess piece SVGs/Images)
-├── components/       # Reusable UI components
-├── lib/              # Core Chess Engine & Stack logic
-├── next.config.ts    # Next.js configuration
-└── tsconfig.json     # TypeScript configuration
-```
-## 👤 Author
-applejuice093
+Open [http://localhost:3000](http://localhost:3000).
 
-GitHub: @applejuice093
+### Scripts
+
+| Script | Purpose |
+| :--- | :--- |
+| `npm run dev` | Development server |
+| `npm run build` | Production build |
+| `npm start` | Serve the production build |
+| `npm run lint` | ESLint |
+| `npm test` | Vitest (stack + chess unit tests) |
+| `npm run test:watch` | Vitest watch mode |
+
+---
+
+## Project structure
+
+```
+├── app/                 # Next.js App Router (layout + ChessGame page)
+├── lib/
+│   ├── chess/           # Types, board, moves, AI, pieces, sound
+│   └── stack/           # MoveStack LIFO ADT
+├── tests/               # Vitest unit tests
+├── docs/                # Architecture notes
+├── public/              # Static assets
+├── vitest.config.ts
+└── package.json
+```
+
+---
+
+## How the stack ties to chess moves
+
+1. White clicks a piece → legal targets from `getMoves`.
+2. On a legal click (or AI reply), `applyMove` updates the board and a `Move` record is **pushed** onto the history stack.
+3. The sidebar reads `MoveStack.toTopFirst()` so the newest ply is visually TOP.
+4. **Undo (Pop)** pops one ply and writes the saved piece / capture back onto the board.
+
+---
+
+## Author
+
+applejuice093 — [GitHub](https://github.com/applejuice093)
+
+Made by Ansh, Shubham, Aniket
