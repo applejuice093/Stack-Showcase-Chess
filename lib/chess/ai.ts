@@ -1,4 +1,4 @@
-import { getMoves } from "./moves";
+import { getMoves, isPromotionMove } from "./moves";
 import type { Board, PieceType, Position } from "./types";
 
 export type ScoredMove = {
@@ -17,6 +17,8 @@ export const AI_WEIGHTS = {
   capture: 100,
   pawnAdvance: 5,
   randomNoise: 10,
+  /** Reaching the last rank (auto-queen) is worth roughly a queen. */
+  promotion: 80,
 } as const;
 
 /**
@@ -36,6 +38,7 @@ export const PIECE_VALUES: Record<PieceType, number> = {
 /**
  * Collect every legal black move, score them, and return the best.
  * Returns null when black has no legal moves (checkmate / stalemate).
+ * Pawn moves onto the last rank always promote to a queen.
  *
  * This is intentionally shallow (no minimax) — the project is a stack
  * showcase, not a tournament engine.
@@ -43,14 +46,17 @@ export const PIECE_VALUES: Record<PieceType, number> = {
 export function getAIMove(
   board: Board,
   random: () => number = Math.random
-): { from: Position; to: Position } | null {
+): { from: Position; to: Position; promotion?: PieceType } | null {
   const scored = collectScoredMoves(board, random);
   if (scored.length === 0) return null;
 
   const best = scored.reduce((acc, curr) =>
     curr.score > acc.score ? curr : acc
   );
-  return { from: best.from, to: best.to };
+  const mover = board[best.from.row][best.from.col];
+  return isPromotionMove(mover, best.to)
+    ? { from: best.from, to: best.to, promotion: "q" }
+    : { from: best.from, to: best.to };
 }
 
 export function collectScoredMoves(
@@ -85,8 +91,10 @@ function scoreMove(
   let score = random() * AI_WEIGHTS.randomNoise;
   const target = board[to.row][to.col];
   if (target) score += AI_WEIGHTS.capture + PIECE_VALUES[target.type];
-  if (board[from.row][from.col]?.type === "p") {
+  const mover = board[from.row][from.col];
+  if (mover?.type === "p") {
     score += AI_WEIGHTS.pawnAdvance;
   }
+  if (isPromotionMove(mover, to)) score += AI_WEIGHTS.promotion;
   return score;
 }

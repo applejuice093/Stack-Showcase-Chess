@@ -118,3 +118,21 @@ describe("AI capture ranking", () => {
     expect(move?.to).toEqual({ row: 2, col: 2 });
   });
 });
+
+describe("AI promotion", () => {
+  it("promotes a black pawn reaching rank 1 to a queen", () => {
+    const board: import("@/lib/chess").Board = Array.from({ length: 8 }, () =>
+      Array.from({ length: 8 }, () => null)
+    );
+    board[0][0] = { type: "k", color: "b" }; // a8
+    board[7][7] = { type: "k", color: "w" }; // h1
+    board[6][3] = { type: "p", color: "b" }; // d2, one step from promoting
+    const move = getAIMove(board, () => 0);
+    expect(move).toEqual({ from: { row: 6, col: 3 }, to: { row: 7, col: 3 }, promotion: "q" });
+  });
+
+  it("does not attach a promotion to ordinary moves", () => {
+    const move = getAIMove(initialBoard(), () => 0);
+    expect(move?.promotion).toBeUndefined();
+  });
+});

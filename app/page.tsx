@@ -178,13 +178,15 @@ export default function ChessGame() {
       const { board: newBoard, captured } = applyMove(
         board,
         aiMove.from,
-        aiMove.to
+        aiMove.to,
+        aiMove.promotion
       );
       const move: Move = {
         from: aiMove.from,
         to: aiMove.to,
         piece: { ...piece },
         captured,
+        ...(aiMove.promotion ? { promotion: aiMove.promotion } : {}),
       };
 
       setBoard(newBoard);
