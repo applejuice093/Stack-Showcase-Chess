@@ -5,7 +5,7 @@ import {
   oppositeColor,
   posEqual,
 } from "./board";
-import type { Board, Piece, PieceColor, PieceType, Position } from "./types";
+import type { Board, Move, Piece, PieceColor, PieceType, Position } from "./types";
 
 type Offset = readonly [number, number];
 
@@ -184,4 +184,22 @@ export function applyMove(
   }
   next[from.row][from.col] = null;
   return { board: next, captured };
+}
+
+/** True when moving `piece` to `to` lands a pawn on its last rank. */
+export function isPromotionMove(piece: Piece, to: Position): boolean {
+  if (piece?.type !== "p") return false;
+  return (piece.color === "w" && to.row === 0) || (piece.color === "b" && to.row === 7);
+}
+
+/**
+ * Reverse one recorded ply on a copied board: the mover (as it was
+ * before any promotion) returns to `from` and the captured piece, if
+ * any, reappears on `to`. Does not mutate `board`.
+ */
+export function undoMoveOnBoard(board: Board, move: Move): Board {
+  const next = copyBoard(board);
+  next[move.from.row][move.from.col] = move.piece ? { ...move.piece } : null;
+  next[move.to.row][move.to.col] = move.captured ? { ...move.captured } : null;
+  return next;
 }
