@@ -5,7 +5,43 @@ import {
   oppositeColor,
   posEqual,
 } from "./board";
-import type { Board, PieceColor, Position } from "./types";
+import type { Board, Move, Piece, PieceColor, PieceType, Position } from "./types";
+
+type Offset = readonly [number, number];
+
+const KNIGHT_OFFSETS: readonly Offset[] = [
+  [-2, -1],
+  [-2, 1],
+  [-1, -2],
+  [-1, 2],
+  [1, -2],
+  [1, 2],
+  [2, -1],
+  [2, 1],
+];
+
+const DIAGONALS: readonly Offset[] = [
+  [-1, -1],
+  [-1, 1],
+  [1, -1],
+  [1, 1],
+];
+
+const ORTHOGONALS: readonly Offset[] = [
+  [-1, 0],
+  [1, 0],
+  [0, -1],
+  [0, 1],
+];
+
+/** King steps and queen rays share the same eight directions. */
+const KING_OFFSETS: readonly Offset[] = [...DIAGONALS, ...ORTHOGONALS];
+
+const SLIDE_DIRECTIONS: Record<"b" | "r" | "q", readonly Offset[]> = {
+  b: DIAGONALS,
+  r: ORTHOGONALS,
+  q: KING_OFFSETS,
+};
 
 /**
  * Pseudo-legal then (optionally) check-filtered moves from `from`.
@@ -19,6 +55,9 @@ export function getMoves(
   from: Position,
   checkSafety = true
 ): Position[] {
+  // Guard against off-board or non-integer squares (e.g. stale UI state)
+  // instead of throwing "cannot read properties of undefined".
+  if (!inBounds(from)) return [];
   const piece = board[from.row][from.col];
   if (!piece) return [];
 
@@ -58,69 +97,20 @@ export function getMoves(
       }
     }
   } else if (type === "n") {
-    const offs = [
-      [-2, -1],
-      [-2, 1],
-      [-1, -2],
-      [-1, 2],
-      [1, -2],
-      [1, 2],
-      [2, -1],
-      [2, 1],
-    ];
-    offs.forEach(([dr, dc]) =>
-      addMove({ row: from.row + dr, col: from.col + dc })
-    );
-  } else if (type === "b") {
-    [
-      [-1, -1],
-      [-1, 1],
-      [1, -1],
-      [1, 1],
-    ].forEach(([dr, dc]) => {
-      for (let i = 1; i < 8; i++) {
-        if (!addMove({ row: from.row + i * dr, col: from.col + i * dc })) break;
-      }
-    });
-  } else if (type === "r") {
-    [
-      [-1, 0],
-      [1, 0],
-      [0, -1],
-      [0, 1],
-    ].forEach(([dr, dc]) => {
-      for (let i = 1; i < 8; i++) {
-        if (!addMove({ row: from.row + i * dr, col: from.col + i * dc })) break;
-      }
-    });
-  } else if (type === "q") {
-    [
-      [-1, -1],
-      [-1, 0],
-      [-1, 1],
-      [0, -1],
-      [0, 1],
-      [1, -1],
-      [1, 0],
-      [1, 1],
-    ].forEach(([dr, dc]) => {
-      for (let i = 1; i < 8; i++) {
-        if (!addMove({ row: from.row + i * dr, col: from.col + i * dc })) break;
-      }
-    });
-  } else if (type === "k") {
-    [
-      [-1, -1],
-      [-1, 0],
-      [-1, 1],
-      [0, -1],
-      [0, 1],
-      [1, -1],
-      [1, 0],
-      [1, 1],
-    ].forEach(([dr, dc]) => {
+    for (const [dr, dc] of KNIGHT_OFFSETS) {
       addMove({ row: from.row + dr, col: from.col + dc });
-    });
+    }
+  } else if (type === "k") {
+    for (const [dr, dc] of KING_OFFSETS) {
+      addMove({ row: from.row + dr, col: from.col + dc });
+    }
+  } else {
+    // Sliding pieces: walk each ray until blocked or off the board.
+    for (const [dr, dc] of SLIDE_DIRECTIONS[type]) {
+      for (let i = 1; i < 8; i++) {
+        if (!addMove({ row: from.row + i * dr, col: from.col + i * dc })) break;
+      }
+    }
   }
 
   if (!checkSafety) return moves;
@@ -178,8 +168,8 @@ export function applyMove(
   board: Board,
   from: Position,
   to: Position,
-  promotion?: import("./types").PieceType
-): { board: Board; captured: import("./types").Piece } {
+  promotion?: PieceType
+): { board: Board; captured: Piece } {
   const next = copyBoard(board);
   const piece = next[from.row][from.col];
   const captured = next[to.row][to.col];
@@ -194,4 +184,39 @@ export function applyMove(
   }
   next[from.row][from.col] = null;
   return { board: next, captured };
+}
+
+/** True when moving `piece` to `to` lands a pawn on its last rank. */
+export function isPromotionMove(piece: Piece, to: Position): boolean {
+  if (piece?.type !== "p") return false;
+  return (piece.color === "w" && to.row === 0) || (piece.color === "b" && to.row === 7);
+}
+
+/**
+ * Reverse one recorded ply on a copied board: the mover (as it was
+ * before any promotion) returns to `from` and the captured piece, if
+ * any, reappears on `to`. Does not mutate `board`.
+ */
+export function undoMoveOnBoard(board: Board, move: Move): Board {
+  const next = copyBoard(board);
+  next[move.from.row][move.from.col] = move.piece ? { ...move.piece } : null;
+  next[move.to.row][move.to.col] = move.captured ? { ...move.captured } : null;
+  return next;
+}
+
+/**
+ * Dead-position check for the simplest draws: K vs K, K+B vs K and
+ * K+N vs K. Neither side can ever deliver mate, so the game should end
+ * instead of shuffling kings forever.
+ */
+export function isInsufficientMaterial(board: Board): boolean {
+  const extras: PieceType[] = [];
+  for (const row of board) {
+    for (const piece of row) {
+      if (!piece || piece.type === "k") continue;
+      extras.push(piece.type);
+      if (extras.length > 1) return false;
+    }
+  }
+  return extras.length === 0 || extras[0] === "b" || extras[0] === "n";
 }

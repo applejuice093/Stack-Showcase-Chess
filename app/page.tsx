@@ -9,7 +9,6 @@ import {
   type Position,
   type Move,
   initialBoard,
-  copyBoard,
   posEqual,
   isInCheck,
   getMoves,
@@ -21,6 +20,9 @@ import {
   playSound,
   SOUND,
   toAlgebraic,
+  isPromotionMove,
+  isInsufficientMaterial,
+  undoTurn,
 } from "@/lib/chess";
 import { MoveStack } from "@/lib/stack";
 
@@ -56,6 +58,8 @@ export default function ChessGame() {
       } else {
         setGameOver("Stalemate! Draw!");
       }
+    } else if (isInsufficientMaterial(nextBoard)) {
+      setGameOver("Draw by insufficient material!");
     } else if (isInCheck(nextBoard, nextTurn)) {
       playSound(SOUND.check);
     }
@@ -90,27 +94,18 @@ export default function ChessGame() {
     [board, turn, moveStack]
   );
 
+  // Undo rolls back to White's last decision. Popping only the AI's reply
+  // would hand the turn to Black and the AI would immediately move again.
   const undoMove = () => {
-    const stack = MoveStack.fromArray(moveStack);
-    const move = stack.pop();
-    if (!move) return;
+    const result = undoTurn(board, moveStack, "w");
+    if (result.popped === 0) return;
 
-    const newBoard = copyBoard(board);
-    newBoard[move.from.row][move.from.col] = move.piece;
-    newBoard[move.to.row][move.to.col] = move.captured;
-
-    const remaining = stack.toArray();
-    setBoard(newBoard);
-    setTurn(turn === "w" ? "b" : "w");
+    const remaining = result.moves;
+    const top = remaining[remaining.length - 1];
+    setBoard(result.board);
+    setTurn(result.turn);
     setMoveStack(remaining);
-    setLastMove(
-      remaining.length > 0
-        ? {
-            from: remaining[remaining.length - 1].from,
-            to: remaining[remaining.length - 1].to,
-          }
-        : null
-    );
+    setLastMove(top ? { from: top.from, to: top.to } : null);
     setGameOver(null);
     setShowPromo(null);
     setSelected(null);
@@ -131,10 +126,7 @@ export default function ChessGame() {
 
       if (isLegal) {
         const p = board[selected.row][selected.col];
-        if (
-          p?.type === "p" &&
-          ((p.color === "w" && row === 0) || (p.color === "b" && row === 7))
-        ) {
+        if (isPromotionMove(p, pos)) {
           setShowPromo(pos);
           return;
         }
@@ -178,13 +170,15 @@ export default function ChessGame() {
       const { board: newBoard, captured } = applyMove(
         board,
         aiMove.from,
-        aiMove.to
+        aiMove.to,
+        aiMove.promotion
       );
       const move: Move = {
         from: aiMove.from,
         to: aiMove.to,
         piece: { ...piece },
         captured,
+        ...(aiMove.promotion ? { promotion: aiMove.promotion } : {}),
       };
 
       setBoard(newBoard);

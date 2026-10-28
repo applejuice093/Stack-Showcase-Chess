@@ -107,3 +107,32 @@ describe("AI", () => {
     expect(board[move!.to.row][move!.to.col]?.color).toBe("w");
   });
 });
+
+describe("AI capture ranking", () => {
+  it("captures the more valuable piece when it has a choice", () => {
+    const board = initialBoard();
+    board[1][0] = null; // a7 pawn gone
+    board[2][0] = { type: "p", color: "w" }; // a6: knight b8 can take a pawn
+    board[2][2] = { type: "q", color: "w" }; // c6: ...or a queen
+    const move = getAIMove(board, () => 0);
+    expect(move?.to).toEqual({ row: 2, col: 2 });
+  });
+});
+
+describe("AI promotion", () => {
+  it("promotes a black pawn reaching rank 1 to a queen", () => {
+    const board: import("@/lib/chess").Board = Array.from({ length: 8 }, () =>
+      Array.from({ length: 8 }, () => null)
+    );
+    board[0][0] = { type: "k", color: "b" }; // a8
+    board[7][7] = { type: "k", color: "w" }; // h1
+    board[6][3] = { type: "p", color: "b" }; // d2, one step from promoting
+    const move = getAIMove(board, () => 0);
+    expect(move).toEqual({ from: { row: 6, col: 3 }, to: { row: 7, col: 3 }, promotion: "q" });
+  });
+
+  it("does not attach a promotion to ordinary moves", () => {
+    const move = getAIMove(initialBoard(), () => 0);
+    expect(move?.promotion).toBeUndefined();
+  });
+});

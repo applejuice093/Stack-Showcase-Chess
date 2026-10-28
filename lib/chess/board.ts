@@ -34,8 +34,16 @@ export function posEqual(
   );
 }
 
+/** True for integer coordinates on the 8×8 board. */
 export function inBounds(p: Position): boolean {
-  return p.row >= 0 && p.row < 8 && p.col >= 0 && p.col < 8;
+  return (
+    Number.isInteger(p.row) &&
+    Number.isInteger(p.col) &&
+    p.row >= 0 &&
+    p.row < 8 &&
+    p.col >= 0 &&
+    p.col < 8
+  );
 }
 
 export function findKing(board: Board, color: PieceColor): Position | null {
@@ -59,6 +67,8 @@ export function toAlgebraic(pos: Position): string {
   return `${String.fromCharCode(97 + pos.col)}${8 - pos.row}`;
 }
 
+/** Piece on `pos`, or null for empty and off-board squares. */
 export function pieceAt(board: Board, pos: Position): Piece {
+  if (!inBounds(pos)) return null;
   return board[pos.row][pos.col];
 }
