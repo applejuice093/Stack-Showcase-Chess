@@ -6,7 +6,7 @@
 
 A Next.js chess demo that teaches **stack (LIFO) data structures** through playable move history. Every legal ply is **pushed** onto a move stack; **Undo** **pops** the top ply and restores the prior board. A shallow heuristic AI plays Black so you can watch pushes accumulate in the sidebar.
 
-> This is a teaching showcase, not a full FIDE rules engine. Castling and en passant are not implemented yet (types leave room for them). Pawn promotion, check, checkmate, and stalemate are supported.
+> This is a teaching showcase, not a full FIDE rules engine. Castling and en passant are not implemented yet (types leave room for them). Pawn promotion (including AI auto-queening), check, checkmate, stalemate and draws by insufficient material (K vs K, K+B/N vs K) are supported.
 
 ---
 
@@ -27,11 +27,11 @@ The React UI keeps `Move[]` in state for re-renders; `lib/stack/MoveStack` wraps
 ## Features
 
 - Playable board (you = White) with legal-move highlights
-- Black AI that prefers captures, with a short “thinking” delay
+- Black AI that prefers captures (highest-value piece first) and promotes its pawns, with a short “thinking” delay
 - Live **Move Stack** panel (TOP marker, algebraic squares, captures)
-- Undo (pop) and Reset
+- Undo (pop) back to your last move — the AI's reply and your move are both popped — and Reset
 - Pawn promotion picker
-- Check / checkmate / stalemate detection
+- Check / checkmate / stalemate / insufficient-material draw detection
 - Pure TypeScript engine under `lib/` with unit tests (`npm test`)
 
 ---
@@ -72,6 +72,8 @@ Open [http://localhost:3000](http://localhost:3000).
 | `npm start` | Serve the production build |
 | `npm run lint` | ESLint |
 | `npm test` | Vitest (stack + chess unit tests) |
+| `npm run typecheck` | TypeScript type check (`tsc --noEmit`) |
+| `npm run check` | Typecheck + lint + tests in one go (run before pushing) |
 | `npm run test:watch` | Vitest watch mode |
 
 ---
@@ -97,7 +99,7 @@ Open [http://localhost:3000](http://localhost:3000).
 1. White clicks a piece → legal targets from `getMoves`.
 2. On a legal click (or AI reply), `applyMove` updates the board and a `Move` record is **pushed** onto the history stack.
 3. The sidebar reads `MoveStack.toTopFirst()` so the newest ply is visually TOP.
-4. **Undo (Pop)** pops one ply and writes the saved piece / capture back onto the board.
+4. **Undo (Pop)** calls `undoTurn`, which pops plies until it has removed one of *your* moves (usually two: the AI reply and your move) and writes each saved piece / capture back onto the board. Popping only the AI reply would just hand the turn back to the AI.
 
 ---
 
