@@ -203,3 +203,20 @@ export function undoMoveOnBoard(board: Board, move: Move): Board {
   next[move.to.row][move.to.col] = move.captured ? { ...move.captured } : null;
   return next;
 }
+
+/**
+ * Dead-position check for the simplest draws: K vs K, K+B vs K and
+ * K+N vs K. Neither side can ever deliver mate, so the game should end
+ * instead of shuffling kings forever.
+ */
+export function isInsufficientMaterial(board: Board): boolean {
+  const extras: PieceType[] = [];
+  for (const row of board) {
+    for (const piece of row) {
+      if (!piece || piece.type === "k") continue;
+      extras.push(piece.type);
+      if (extras.length > 1) return false;
+    }
+  }
+  return extras.length === 0 || extras[0] === "b" || extras[0] === "n";
+}

@@ -21,6 +21,7 @@ import {
   SOUND,
   toAlgebraic,
   isPromotionMove,
+  isInsufficientMaterial,
   undoTurn,
 } from "@/lib/chess";
 import { MoveStack } from "@/lib/stack";
@@ -57,6 +58,8 @@ export default function ChessGame() {
       } else {
         setGameOver("Stalemate! Draw!");
       }
+    } else if (isInsufficientMaterial(nextBoard)) {
+      setGameOver("Draw by insufficient material!");
     } else if (isInCheck(nextBoard, nextTurn)) {
       playSound(SOUND.check);
     }

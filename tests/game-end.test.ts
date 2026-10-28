@@ -5,6 +5,7 @@ import {
   hasLegalMoves,
   initialBoard,
   isInCheck,
+  isInsufficientMaterial,
 } from "@/lib/chess";
 
 const empty = (): Board =>
@@ -28,5 +29,27 @@ describe("game end detection", () => {
     b[7][7] = { type: "k", color: "w" }; // h1
     expect(isInCheck(b, "b")).toBe(false);
     expect(hasLegalMoves(b, "b")).toBe(false);
+  });
+
+  it("flags bare kings and a single minor piece as insufficient material", () => {
+    const b = empty();
+    b[0][0] = { type: "k", color: "b" };
+    b[7][7] = { type: "k", color: "w" };
+    expect(isInsufficientMaterial(b)).toBe(true);
+    b[4][4] = { type: "n", color: "w" };
+    expect(isInsufficientMaterial(b)).toBe(true);
+    b[4][4] = { type: "b", color: "b" };
+    expect(isInsufficientMaterial(b)).toBe(true);
+  });
+
+  it("does not flag positions that can still be won", () => {
+    const b = empty();
+    b[0][0] = { type: "k", color: "b" };
+    b[7][7] = { type: "k", color: "w" };
+    b[4][4] = { type: "p", color: "w" };
+    expect(isInsufficientMaterial(b)).toBe(false);
+    b[4][4] = { type: "r", color: "w" };
+    expect(isInsufficientMaterial(b)).toBe(false);
+    expect(isInsufficientMaterial(initialBoard())).toBe(false);
   });
 });
