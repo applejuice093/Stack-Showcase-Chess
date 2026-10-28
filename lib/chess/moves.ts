@@ -7,6 +7,42 @@ import {
 } from "./board";
 import type { Board, Piece, PieceColor, PieceType, Position } from "./types";
 
+type Offset = readonly [number, number];
+
+const KNIGHT_OFFSETS: readonly Offset[] = [
+  [-2, -1],
+  [-2, 1],
+  [-1, -2],
+  [-1, 2],
+  [1, -2],
+  [1, 2],
+  [2, -1],
+  [2, 1],
+];
+
+const DIAGONALS: readonly Offset[] = [
+  [-1, -1],
+  [-1, 1],
+  [1, -1],
+  [1, 1],
+];
+
+const ORTHOGONALS: readonly Offset[] = [
+  [-1, 0],
+  [1, 0],
+  [0, -1],
+  [0, 1],
+];
+
+/** King steps and queen rays share the same eight directions. */
+const KING_OFFSETS: readonly Offset[] = [...DIAGONALS, ...ORTHOGONALS];
+
+const SLIDE_DIRECTIONS: Record<"b" | "r" | "q", readonly Offset[]> = {
+  b: DIAGONALS,
+  r: ORTHOGONALS,
+  q: KING_OFFSETS,
+};
+
 /**
  * Pseudo-legal then (optionally) check-filtered moves from `from`.
  *
@@ -61,69 +97,20 @@ export function getMoves(
       }
     }
   } else if (type === "n") {
-    const offs = [
-      [-2, -1],
-      [-2, 1],
-      [-1, -2],
-      [-1, 2],
-      [1, -2],
-      [1, 2],
-      [2, -1],
-      [2, 1],
-    ];
-    offs.forEach(([dr, dc]) =>
-      addMove({ row: from.row + dr, col: from.col + dc })
-    );
-  } else if (type === "b") {
-    [
-      [-1, -1],
-      [-1, 1],
-      [1, -1],
-      [1, 1],
-    ].forEach(([dr, dc]) => {
-      for (let i = 1; i < 8; i++) {
-        if (!addMove({ row: from.row + i * dr, col: from.col + i * dc })) break;
-      }
-    });
-  } else if (type === "r") {
-    [
-      [-1, 0],
-      [1, 0],
-      [0, -1],
-      [0, 1],
-    ].forEach(([dr, dc]) => {
-      for (let i = 1; i < 8; i++) {
-        if (!addMove({ row: from.row + i * dr, col: from.col + i * dc })) break;
-      }
-    });
-  } else if (type === "q") {
-    [
-      [-1, -1],
-      [-1, 0],
-      [-1, 1],
-      [0, -1],
-      [0, 1],
-      [1, -1],
-      [1, 0],
-      [1, 1],
-    ].forEach(([dr, dc]) => {
-      for (let i = 1; i < 8; i++) {
-        if (!addMove({ row: from.row + i * dr, col: from.col + i * dc })) break;
-      }
-    });
-  } else if (type === "k") {
-    [
-      [-1, -1],
-      [-1, 0],
-      [-1, 1],
-      [0, -1],
-      [0, 1],
-      [1, -1],
-      [1, 0],
-      [1, 1],
-    ].forEach(([dr, dc]) => {
+    for (const [dr, dc] of KNIGHT_OFFSETS) {
       addMove({ row: from.row + dr, col: from.col + dc });
-    });
+    }
+  } else if (type === "k") {
+    for (const [dr, dc] of KING_OFFSETS) {
+      addMove({ row: from.row + dr, col: from.col + dc });
+    }
+  } else {
+    // Sliding pieces: walk each ray until blocked or off the board.
+    for (const [dr, dc] of SLIDE_DIRECTIONS[type]) {
+      for (let i = 1; i < 8; i++) {
+        if (!addMove({ row: from.row + i * dr, col: from.col + i * dc })) break;
+      }
+    }
   }
 
   if (!checkSafety) return moves;
