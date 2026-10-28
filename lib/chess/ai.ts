@@ -1,5 +1,5 @@
 import { getMoves } from "./moves";
-import type { Board, Position } from "./types";
+import type { Board, PieceType, Position } from "./types";
 
 export type ScoredMove = {
   from: Position;
@@ -13,10 +13,25 @@ export type ScoredMove = {
  * randomNoise keeps games from repeating the same line.
  */
 export const AI_WEIGHTS = {
+  /** Base bonus for any capture; the victim's value is added on top. */
   capture: 100,
   pawnAdvance: 5,
   randomNoise: 10,
 } as const;
+
+/**
+ * Classic material values (in pawns × 10) used to rank captures, so the
+ * AI takes a queen over a pawn when both are available. The king is 0
+ * because legal move generation never lets it be captured.
+ */
+export const PIECE_VALUES: Record<PieceType, number> = {
+  p: 10,
+  n: 30,
+  b: 30,
+  r: 50,
+  q: 90,
+  k: 0,
+};
 
 /**
  * Collect every legal black move, score them, and return the best.
@@ -69,7 +84,7 @@ function scoreMove(
 ): number {
   let score = random() * AI_WEIGHTS.randomNoise;
   const target = board[to.row][to.col];
-  if (target) score += AI_WEIGHTS.capture;
+  if (target) score += AI_WEIGHTS.capture + PIECE_VALUES[target.type];
   if (board[from.row][from.col]?.type === "p") {
     score += AI_WEIGHTS.pawnAdvance;
   }

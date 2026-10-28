@@ -107,3 +107,14 @@ describe("AI", () => {
     expect(board[move!.to.row][move!.to.col]?.color).toBe("w");
   });
 });
+
+describe("AI capture ranking", () => {
+  it("captures the more valuable piece when it has a choice", () => {
+    const board = initialBoard();
+    board[1][0] = null; // a7 pawn gone
+    board[2][0] = { type: "p", color: "w" }; // a6: knight b8 can take a pawn
+    board[2][2] = { type: "q", color: "w" }; // c6: ...or a queen
+    const move = getAIMove(board, () => 0);
+    expect(move?.to).toEqual({ row: 2, col: 2 });
+  });
+});
