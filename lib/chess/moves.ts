@@ -19,6 +19,9 @@ export function getMoves(
   from: Position,
   checkSafety = true
 ): Position[] {
+  // Guard against off-board or non-integer squares (e.g. stale UI state)
+  // instead of throwing "cannot read properties of undefined".
+  if (!inBounds(from)) return [];
   const piece = board[from.row][from.col];
   if (!piece) return [];
 
