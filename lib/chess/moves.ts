@@ -5,7 +5,7 @@ import {
   oppositeColor,
   posEqual,
 } from "./board";
-import type { Board, PieceColor, Position } from "./types";
+import type { Board, Piece, PieceColor, PieceType, Position } from "./types";
 
 /**
  * Pseudo-legal then (optionally) check-filtered moves from `from`.
@@ -181,8 +181,8 @@ export function applyMove(
   board: Board,
   from: Position,
   to: Position,
-  promotion?: import("./types").PieceType
-): { board: Board; captured: import("./types").Piece } {
+  promotion?: PieceType
+): { board: Board; captured: Piece } {
   const next = copyBoard(board);
   const piece = next[from.row][from.col];
   const captured = next[to.row][to.col];
