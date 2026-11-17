@@ -53,4 +53,22 @@ describe("MoveStack", () => {
     expect(stack.isEmpty()).toBe(true);
     expect(stack.toArray()).toEqual([]);
   });
+
+  it("peek and toArray return copies so callers cannot mutate the stack", () => {
+    const original = sample(4);
+    const stack = new MoveStack();
+    stack.push(original);
+    original.from.row = 0;
+    expect(stack.peek()?.from.row).toBe(6);
+
+    const peeked = stack.peek()!;
+    peeked.to.row = 0;
+    peeked.piece!.type = "q";
+    expect(stack.peek()?.to.row).toBe(4);
+    expect(stack.peek()?.piece?.type).toBe("p");
+
+    const arr = stack.toArray();
+    arr[0].from.col = 7;
+    expect(stack.toArray()[0].from.col).toBe(4);
+  });
 });

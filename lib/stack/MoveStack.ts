@@ -16,16 +16,36 @@ export class MoveStack {
   private items: Move[];
 
   constructor(initial: readonly Move[] = []) {
-    this.items = [...initial];
+    this.items = initial.map((m) => this.clone(m));
   }
 
   static fromArray(moves: readonly Move[]): MoveStack {
     return new MoveStack(moves);
   }
 
+  /** Structured clone so callers cannot mutate the stack through a peek/toArray result. */
+  private clone(move: Move): Move {
+    return {
+      ...move,
+      from: { ...move.from },
+      to: { ...move.to },
+      piece: move.piece ? { ...move.piece } : null,
+      captured: move.captured ? { ...move.captured } : null,
+      ...(move.castling
+        ? {
+            castling: {
+              rookFrom: { ...move.castling.rookFrom },
+              rookTo: { ...move.castling.rookTo },
+            },
+          }
+        : {}),
+      ...(move.enPassant ? { enPassant: { ...move.enPassant } } : {}),
+    };
+  }
+
   /** Push a completed ply onto the top of the stack. */
   push(move: Move): void {
-    this.items.push(move);
+    this.items.push(this.clone(move));
   }
 
   /**
@@ -39,7 +59,7 @@ export class MoveStack {
   /** Inspect the top move without removing it. */
   peek(): Move | undefined {
     if (this.items.length === 0) return undefined;
-    return this.items[this.items.length - 1];
+    return this.clone(this.items[this.items.length - 1]);
   }
 
   size(): number {
@@ -56,7 +76,7 @@ export class MoveStack {
 
   /** Snapshot for React state or serialization (oldest → newest). */
   toArray(): Move[] {
-    return [...this.items];
+    return this.items.map((m) => this.clone(m));
   }
 
   /**
@@ -64,6 +84,6 @@ export class MoveStack {
    * humans expect when reading a stack vertically).
    */
   toTopFirst(): Move[] {
-    return [...this.items].reverse();
+    return this.items.map((m) => this.clone(m)).reverse();
   }
 }
