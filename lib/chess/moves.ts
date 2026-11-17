@@ -160,6 +160,54 @@ export function hasLegalMoves(board: Board, color: PieceColor): boolean {
   return false;
 }
 
+/** Every legal destination for `color`, paired with its origin square. */
+export function getAllLegalMoves(
+  board: Board,
+  color: PieceColor
+): { from: Position; to: Position }[] {
+  const moves: { from: Position; to: Position }[] = [];
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      if (board[r][c]?.color !== color) continue;
+      const from = { row: r, col: c };
+      for (const to of getMoves(board, from)) {
+        moves.push({ from, to });
+      }
+    }
+  }
+  return moves;
+}
+
+/** True when `to` is a legal destination for the piece on `from`. */
+export function isLegalMove(board: Board, from: Position, to: Position): boolean {
+  return getMoves(board, from).some((m) => posEqual(m, to));
+}
+
+export type GameStatus =
+  | { state: "playing"; check: boolean }
+  | { state: "checkmate"; winner: PieceColor }
+  | { state: "stalemate" }
+  | { state: "draw-insufficient" };
+
+/**
+ * Outcome for the side about to move. Insufficient material is checked
+ * first so bare-king endings are a draw even though legal king moves
+ * still exist.
+ */
+export function getGameStatus(board: Board, sideToMove: PieceColor): GameStatus {
+  if (isInsufficientMaterial(board)) {
+    return { state: "draw-insufficient" };
+  }
+  const check = isInCheck(board, sideToMove);
+  if (!hasLegalMoves(board, sideToMove)) {
+    if (check) {
+      return { state: "checkmate", winner: oppositeColor(sideToMove) };
+    }
+    return { state: "stalemate" };
+  }
+  return { state: "playing", check };
+}
+
 /**
  * Apply a from→to ply onto a copied board. Does not mutate `board`.
  * Promotion replaces the moving piece type when provided.
@@ -171,6 +219,9 @@ export function applyMove(
   promotion?: PieceType
 ): { board: Board; captured: Piece } {
   const next = copyBoard(board);
+  if (!inBounds(from) || !inBounds(to)) {
+    return { board: next, captured: null };
+  }
   const piece = next[from.row][from.col];
   const captured = next[to.row][to.col];
   if (!piece) {
@@ -199,6 +250,9 @@ export function isPromotionMove(piece: Piece, to: Position): boolean {
  */
 export function undoMoveOnBoard(board: Board, move: Move): Board {
   const next = copyBoard(board);
+  if (!inBounds(move.from) || !inBounds(move.to)) {
+    return next;
+  }
   next[move.from.row][move.from.col] = move.piece ? { ...move.piece } : null;
   next[move.to.row][move.to.col] = move.captured ? { ...move.captured } : null;
   return next;
@@ -210,13 +264,19 @@ export function undoMoveOnBoard(board: Board, move: Move): Board {
  * instead of shuffling kings forever.
  */
 export function isInsufficientMaterial(board: Board): boolean {
-  const extras: PieceType[] = [];
-  for (const row of board) {
-    for (const piece of row) {
+  const extras: { type: PieceType; squareColor: number }[] = [];
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const piece = board[r][c];
       if (!piece || piece.type === "k") continue;
-      extras.push(piece.type);
-      if (extras.length > 1) return false;
+      extras.push({ type: piece.type, squareColor: (r + c) % 2 });
     }
   }
-  return extras.length === 0 || extras[0] === "b" || extras[0] === "n";
+  if (extras.length === 0) return true;
+  if (extras.length === 1) return extras[0].type === "b" || extras[0].type === "n";
+  // K+B vs K+B (or K+B+B) is dead if every bishop sits on the same colour.
+  if (extras.length === 2 && extras.every((p) => p.type === "b")) {
+    return extras[0].squareColor === extras[1].squareColor;
+  }
+  return false;
 }
