@@ -21,7 +21,7 @@ lib/stack/MoveStack   LIFO ADT over Move records
 | Module | Responsibility |
 | :--- | :--- |
 | `types.ts` | `Piece`, `Board`, `Position`, `Move` |
-| `board.ts` | Initial position, copy, bounds, king find, `toAlgebraic` / `fromAlgebraic` / `formatPly`, `describePiece` |
+| `board.ts` | Initial position, copy, bounds, king find, `toAlgebraic` / `fromAlgebraic` / `formatPly` / `parsePly` / `parsePly`, `describePiece` |
 | `moves.ts` | Pseudo-legal + check-safe move gen (shared ray tables), `applyMove`, `undoMoveOnBoard`, `isPromotionMove`, `isLegalMove`, `getAllLegalMoves`, `getGameStatus`, `isInsufficientMaterial` (including same-colour bishops) |
 | `undo.ts` | `undoTurn`: pop plies until the human's last move is undone |
 | `ai.ts` | Black move scoring: capture bonus + `PIECE_VALUES[victim]`, check bonus, promotion bonus (auto-queen), pawn push, noise |

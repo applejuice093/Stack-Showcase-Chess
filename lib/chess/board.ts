@@ -83,6 +83,20 @@ export function formatPly(move: Move): string {
   return move.promotion ? `${base}${move.promotion}` : base;
 }
 
+/** Inverse of formatPly. Accepts e2e4 or e7e8q; returns null if invalid. */
+export function parsePly(
+  text: string
+): { from: Position; to: Position; promotion?: PieceType } | null {
+  const match = text.trim().match(/^([a-h][1-8])([a-h][1-8])([qrbn])?$/);
+  if (!match) return null;
+  const from = fromAlgebraic(match[1]);
+  const to = fromAlgebraic(match[2]);
+  if (!from || !to) return null;
+  return match[3]
+    ? { from, to, promotion: match[3] as PieceType }
+    : { from, to };
+}
+
 /** Human-readable piece phrase for accessibility labels, e.g. "white pawn". */
 export function describePiece(piece: Piece): string {
   if (!piece) return "empty";

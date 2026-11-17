@@ -33,7 +33,7 @@ The React UI keeps `Move[]` in state for re-renders; `lib/stack/MoveStack` wraps
 - Pawn promotion picker (Cancel or Escape to close it without moving)
 - Check / checkmate / stalemate / insufficient-material draw detection
 - Pure TypeScript engine under `lib/` with unit tests (`npm test`)
-- `fromAlgebraic` / `formatPly` / `getGameStatus` helpers for tests and the UI
+- `fromAlgebraic` / `formatPly` / `parsePly` / `getGameStatus` helpers for tests and the UI
 
 ---
 

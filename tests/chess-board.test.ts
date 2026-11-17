@@ -6,6 +6,7 @@ import {
   toAlgebraic,
   fromAlgebraic,
   formatPly,
+  parsePly,
   describePiece,
   getMoves,
   isInCheck,
@@ -62,6 +63,16 @@ describe("board helpers", () => {
         promotion: "q",
       })
     ).toBe("a7a8q");
+    expect(
+      parsePly("e2e4")
+    ).toEqual({ from: { row: 6, col: 4 }, to: { row: 4, col: 4 } });
+    expect(parsePly("a7a8q")).toEqual({
+      from: { row: 1, col: 0 },
+      to: { row: 0, col: 0 },
+      promotion: "q",
+    });
+    expect(parsePly("e9e4")).toBeNull();
+    expect(parsePly("e2")).toBeNull();
   });
 
   it("describePiece names a piece for accessibility labels", () => {
