@@ -10,9 +10,7 @@ import {
   type Move,
   initialBoard,
   posEqual,
-  isInCheck,
   getMoves,
-  hasLegalMoves,
   applyMove,
   getAIMove,
   getPieceSymbol,
@@ -21,8 +19,10 @@ import {
   SOUND,
   toAlgebraic,
   isPromotionMove,
-  isInsufficientMaterial,
   undoTurn,
+  getGameStatus,
+  describePiece,
+  formatPly,
 } from "@/lib/chess";
 import { MoveStack } from "@/lib/stack";
 
@@ -44,23 +44,18 @@ export default function ChessGame() {
     window.setTimeout(() => setStackAnim(null), 300);
   };
 
-  const finishTurn = (
-    nextBoard: Board,
-    nextTurn: PieceColor,
-    mover: PieceColor
-  ) => {
-    if (!hasLegalMoves(nextBoard, nextTurn)) {
-      if (isInCheck(nextBoard, nextTurn)) {
-        setGameOver(
-          `Checkmate! ${mover === "w" ? "White" : "Black"} wins!`
-        );
-        playSound(SOUND.mate);
-      } else {
-        setGameOver("Stalemate! Draw!");
-      }
-    } else if (isInsufficientMaterial(nextBoard)) {
+  const finishTurn = (nextBoard: Board, nextTurn: PieceColor) => {
+    const status = getGameStatus(nextBoard, nextTurn);
+    if (status.state === "checkmate") {
+      setGameOver(
+        `Checkmate! ${status.winner === "w" ? "White" : "Black"} wins!`
+      );
+      playSound(SOUND.mate);
+    } else if (status.state === "stalemate") {
+      setGameOver("Stalemate! Draw!");
+    } else if (status.state === "draw-insufficient") {
       setGameOver("Draw by insufficient material!");
-    } else if (isInCheck(nextBoard, nextTurn)) {
+    } else if (status.check) {
       playSound(SOUND.check);
     }
   };
@@ -89,7 +84,7 @@ export default function ChessGame() {
       setShowPromo(null);
       pulseStack("push");
       playSound(captured ? SOUND.capture : SOUND.move);
-      finishTurn(newBoard, nextTurn, turn);
+      finishTurn(newBoard, nextTurn);
     },
     [board, turn, moveStack]
   );
@@ -189,13 +184,14 @@ export default function ChessGame() {
       setLastMove({ from: aiMove.from, to: aiMove.to });
       pulseStack("push");
       playSound(captured ? SOUND.capture : SOUND.move);
-      finishTurn(newBoard, "w", "b");
+      finishTurn(newBoard, "w");
     }, 2000);
 
     return () => window.clearTimeout(timer);
   }, [turn, gameOver, board, moveStack]);
 
   const stackView = MoveStack.fromArray(moveStack).toTopFirst();
+  const liveStatus = getGameStatus(board, turn);
 
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-950 via-purple-950 to-slate-950 text-white p-4 relative">
@@ -313,12 +309,16 @@ export default function ChessGame() {
             </div>
 
             <div className="mt-6 text-center">
-              <div className="inline-block px-8 py-4 bg-cyan-500/20 rounded-xl border border-cyan-400/30">
+              <div
+                className="inline-block px-8 py-4 bg-cyan-500/20 rounded-xl border border-cyan-400/30"
+                role="status"
+                aria-live="polite"
+              >
                 <p className="text-sm text-gray-400">Current Turn</p>
                 <p className="text-3xl font-bold">
                   {turn === "w" ? "White (You)" : "Black (AI)"}
                 </p>
-                {isInCheck(board, turn) && !gameOver && (
+                {liveStatus.state === "playing" && liveStatus.check && !gameOver && (
                   <p className="text-red-400 font-bold mt-2">CHECK!</p>
                 )}
               </div>
