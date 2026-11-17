@@ -190,6 +190,21 @@ export default function ChessGame() {
     return () => window.clearTimeout(timer);
   }, [turn, gameOver, board, moveStack]);
 
+  // Escape cancels a pending promotion or clears the current selection.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      if (showPromo) {
+        setShowPromo(null);
+        return;
+      }
+      setSelected(null);
+      setLegalMoves([]);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [showPromo]);
+
   const stackView = MoveStack.fromArray(moveStack).toTopFirst();
   const liveStatus = getGameStatus(board, turn);
 
@@ -227,7 +242,16 @@ export default function ChessGame() {
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => handleSquareClick(r, c)}
-                        aria-label={`Square ${toAlgebraic(pos)}`}
+                        aria-label={
+                          piece
+                            ? `${describePiece(piece)} on ${toAlgebraic(pos)}${
+                                isLegal ? ", legal move" : ""
+                              }${isSelected ? ", selected" : ""}`
+                            : `Empty square ${toAlgebraic(pos)}${
+                                isLegal ? ", legal move" : ""
+                              }`
+                        }
+                        aria-pressed={isSelected}
                         className={`
                         aspect-square flex items-center justify-center text-4xl lg:text-5xl border-none outline-none
                         ${isLight ? "bg-slate-700/40" : "bg-slate-800/60"}
@@ -256,8 +280,15 @@ export default function ChessGame() {
 
               {gameOver && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm rounded-2xl">
-                  <div className="bg-linear-to-br from-purple-900 to-pink-900 p-8 rounded-xl text-center border-2 border-cyan-400">
-                    <h2 className="text-3xl font-bold mb-4">{gameOver}</h2>
+                  <div
+                    className="bg-linear-to-br from-purple-900 to-pink-900 p-8 rounded-xl text-center border-2 border-cyan-400"
+                    role="dialog"
+                    aria-labelledby="game-over-title"
+                    aria-modal="true"
+                  >
+                    <h2 id="game-over-title" className="text-3xl font-bold mb-4">
+                      {gameOver}
+                    </h2>
                     <button
                       onClick={reset}
                       className="px-6 py-3 bg-cyan-500 hover:bg-cyan-400 rounded-lg font-bold"
@@ -270,8 +301,13 @@ export default function ChessGame() {
 
               {showPromo && selected && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm rounded-2xl">
-                  <div className="bg-slate-800 p-8 rounded-xl border-2 border-cyan-400">
-                    <h3 className="text-2xl font-bold mb-6 text-center">
+                  <div
+                    className="bg-slate-800 p-8 rounded-xl border-2 border-cyan-400"
+                    role="dialog"
+                    aria-labelledby="promote-title"
+                    aria-modal="true"
+                  >
+                    <h3 id="promote-title" className="text-2xl font-bold mb-6 text-center">
                       Promote Pawn
                     </h3>
                     <div className="flex gap-4">
@@ -281,12 +317,19 @@ export default function ChessGame() {
                           onClick={() => {
                             makeMove(selected, showPromo, t);
                           }}
+                          aria-label={`Promote to ${describePiece({ type: t, color: turn })}`}
                           className="w-20 h-20 bg-slate-700 hover:bg-slate-600 rounded-lg flex items-center justify-center text-5xl"
                         >
                           {getPieceSymbol({ type: t, color: turn })}
                         </button>
                       ))}
                     </div>
+                    <button
+                      onClick={() => setShowPromo(null)}
+                      className="mt-6 w-full px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg font-bold"
+                    >
+                      Cancel
+                    </button>
                   </div>
                 </div>
               )}
@@ -296,12 +339,14 @@ export default function ChessGame() {
               <button
                 onClick={undoMove}
                 disabled={moveStack.length === 0}
+                aria-label="Undo last turn (pop from the move stack)"
                 className="px-6 py-3 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-700 disabled:cursor-not-allowed rounded-lg font-bold"
               >
                 Undo (Pop)
               </button>
               <button
                 onClick={reset}
+                aria-label="Reset the board and empty the move stack"
                 className="px-6 py-3 bg-red-600 hover:bg-red-500 rounded-lg font-bold"
               >
                 Reset
@@ -392,6 +437,9 @@ export default function ChessGame() {
                               <span className="text-gray-500">→</span>
                               <span className="font-mono font-bold text-cyan-300">
                                 {toAlgebraic(move.to)}
+                              </span>
+                              <span className="font-mono text-xs text-gray-500">
+                                {formatPly(move)}
                               </span>
                             </div>
                             {move.captured && (
