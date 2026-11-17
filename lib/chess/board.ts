@@ -1,4 +1,4 @@
-import type { Board, Piece, PieceColor, PieceType, Position } from "./types";
+import type { Board, Move, Piece, PieceColor, PieceType, Position } from "./types";
 
 /** Standard opening position (black on rows 0–1, white on rows 6–7). */
 export function initialBoard(): Board {
@@ -62,9 +62,40 @@ export function oppositeColor(color: PieceColor): PieceColor {
   return color === "w" ? "b" : "w";
 }
 
-/** Algebraic square label, e.g. {row:6,col:4} → "e2". */
+/** Algebraic square label, e.g. {row:6,col:4} → "e2". Off-board → "??". */
 export function toAlgebraic(pos: Position): string {
+  if (!inBounds(pos)) return "??";
   return `${String.fromCharCode(97 + pos.col)}${8 - pos.row}`;
+}
+
+/**
+ * Parse a square like "e2". Returns null for anything that is not a
+ * single file (a–h) and rank (1–8), including uppercase "E2".
+ */
+export function fromAlgebraic(sq: string): Position | null {
+  if (!/^[a-h][1-8]$/.test(sq)) return null;
+  return { col: sq.charCodeAt(0) - 97, row: 8 - Number(sq[1]) };
+}
+
+/** Compact ply label, e.g. e2e4 or e7e8q when the move promotes. */
+export function formatPly(move: Move): string {
+  const base = `${toAlgebraic(move.from)}${toAlgebraic(move.to)}`;
+  return move.promotion ? `${base}${move.promotion}` : base;
+}
+
+/** Human-readable piece phrase for accessibility labels, e.g. "white pawn". */
+export function describePiece(piece: Piece): string {
+  if (!piece) return "empty";
+  const color = piece.color === "w" ? "white" : "black";
+  const names: Record<PieceType, string> = {
+    p: "pawn",
+    n: "knight",
+    b: "bishop",
+    r: "rook",
+    q: "queen",
+    k: "king",
+  };
+  return `${color} ${names[piece.type]}`;
 }
 
 /** Piece on `pos`, or null for empty and off-board squares. */
