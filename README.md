@@ -6,7 +6,7 @@
 
 A Next.js chess demo that teaches **stack (LIFO) data structures** through playable move history. Every legal ply is **pushed** onto a move stack; **Undo** **pops** the top ply and restores the prior board. A shallow heuristic AI plays Black so you can watch pushes accumulate in the sidebar.
 
-> This is a teaching showcase, not a full FIDE rules engine. Castling and en passant are not implemented yet (types leave room for them). Pawn promotion (including AI auto-queening), check, checkmate, stalemate and draws by insufficient material (K vs K, K+B/N vs K) are supported.
+> This is a teaching showcase, not a full FIDE rules engine. Castling and en passant are not implemented yet (types leave room for them). Pawn promotion (including AI auto-queening), check, checkmate, stalemate and draws by insufficient material (K vs K, K+B/N vs K, and K+B vs K+B when both bishops sit on the same colour) are supported.
 
 ---
 
@@ -27,12 +27,13 @@ The React UI keeps `Move[]` in state for re-renders; `lib/stack/MoveStack` wraps
 ## Features
 
 - Playable board (you = White) with legal-move highlights
-- Black AI that prefers captures (highest-value piece first) and promotes its pawns, with a short “thinking” delay
-- Live **Move Stack** panel (TOP marker, algebraic squares, captures)
+- Black AI that prefers captures (highest-value piece first), then checks, and promotes its pawns, with a short “thinking” delay
+- Live **Move Stack** panel (TOP marker, algebraic squares, compact `e2e4` / `e7e8q` labels, captures)
 - Undo (pop) back to your last move — the AI's reply and your move are both popped — and Reset
-- Pawn promotion picker
+- Pawn promotion picker (Cancel or Escape to close it without moving)
 - Check / checkmate / stalemate / insufficient-material draw detection
 - Pure TypeScript engine under `lib/` with unit tests (`npm test`)
+- `fromAlgebraic` / `formatPly` / `parsePly` / `getGameStatus` helpers for tests and the UI
 
 ---
 

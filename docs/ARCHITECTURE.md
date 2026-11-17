@@ -21,23 +21,23 @@ lib/stack/MoveStack   LIFO ADT over Move records
 | Module | Responsibility |
 | :--- | :--- |
 | `types.ts` | `Piece`, `Board`, `Position`, `Move` |
-| `board.ts` | Initial position, copy, bounds, king find, algebraic |
-| `moves.ts` | Pseudo-legal + check-safe move gen (shared ray tables), `applyMove`, `undoMoveOnBoard`, `isPromotionMove`, `isInsufficientMaterial` |
+| `board.ts` | Initial position, copy, bounds, king find, `toAlgebraic` / `fromAlgebraic` / `formatPly` / `parsePly` / `parsePly`, `describePiece` |
+| `moves.ts` | Pseudo-legal + check-safe move gen (shared ray tables), `applyMove`, `undoMoveOnBoard`, `isPromotionMove`, `isLegalMove`, `getAllLegalMoves`, `getGameStatus`, `isInsufficientMaterial` (including same-colour bishops) |
 | `undo.ts` | `undoTurn`: pop plies until the human's last move is undone |
-| `ai.ts` | Black move scoring: capture bonus + `PIECE_VALUES[victim]`, promotion bonus (auto-queen), pawn push, noise |
+| `ai.ts` | Black move scoring: capture bonus + `PIECE_VALUES[victim]`, check bonus, promotion bonus (auto-queen), pawn push, noise |
 | `pieces.ts` | Unicode glyphs, promotion choices |
 | `sound.ts` | Optional Web Audio blips (SSR-safe) |
 
 ### `lib/stack`
 
-`MoveStack` exposes `push`, `pop`, `peek`, `size`, `toArray`, `toTopFirst`. The page stores `Move[]` in React state and wraps it with `MoveStack.fromArray` when it needs ADT behaviour (undo, sidebar ordering, tests).
+`MoveStack` exposes `push`, `pop`, `peek`, `size`, `toArray`, `toTopFirst`. `peek` / `toArray` / `toTopFirst` return deep copies so callers cannot mutate history through a reference. The page stores `Move[]` in React state and wraps it with `MoveStack.fromArray` when it needs ADT behaviour (undo, sidebar ordering, tests).
 
 ## Data flow (one ply)
 
 1. UI selects a from-square → `getMoves(board, from)`.
 2. User (or AI) chooses `to` → `applyMove` returns `{ board, captured }`.
 3. Build a `Move` record → append to history (`push` semantics).
-4. Flip turn; if the side to move has no legal moves → checkmate or stalemate via `isInCheck` + `hasLegalMoves`. Otherwise, `isInsufficientMaterial` ends bare-king / single-minor endings as a draw.
+4. Flip turn and call `getGameStatus(board, sideToMove)`: checkmate, stalemate, insufficient-material draw (including same-colour bishops), or play on (with a check flag).
 
 ## Undo
 

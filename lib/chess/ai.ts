@@ -1,4 +1,4 @@
-import { getMoves, isPromotionMove } from "./moves";
+import { applyMove, getMoves, isInCheck, isPromotionMove } from "./moves";
 import type { Board, PieceType, Position } from "./types";
 
 export type ScoredMove = {
@@ -19,6 +19,8 @@ export const AI_WEIGHTS = {
   randomNoise: 10,
   /** Reaching the last rank (auto-queen) is worth roughly a queen. */
   promotion: 80,
+  /** Putting the white king in check, below a typical capture. */
+  check: 40,
 } as const;
 
 /**
@@ -96,5 +98,8 @@ function scoreMove(
     score += AI_WEIGHTS.pawnAdvance;
   }
   if (isPromotionMove(mover, to)) score += AI_WEIGHTS.promotion;
+  const promo = isPromotionMove(mover, to) ? "q" : undefined;
+  const { board: next } = applyMove(board, from, to, promo);
+  if (isInCheck(next, "w")) score += AI_WEIGHTS.check;
   return score;
 }

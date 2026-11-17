@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getMoves, inBounds, initialBoard, pieceAt } from "@/lib/chess";
+import { applyMove, getMoves, inBounds, initialBoard, pieceAt, undoMoveOnBoard } from "@/lib/chess";
 
 describe("bounds handling", () => {
   it("rejects off-board and fractional squares", () => {
@@ -21,4 +21,19 @@ describe("bounds handling", () => {
     expect(pieceAt(board, { row: 9, col: 9 })).toBeNull();
     expect(pieceAt(board, { row: 7, col: 4 })).toEqual({ type: "k", color: "w" });
   });
+
+  it("applyMove and undoMoveOnBoard ignore off-board squares instead of throwing", () => {
+    const board = initialBoard();
+    const applied = applyMove(board, { row: -1, col: 0 }, { row: 0, col: 0 });
+    expect(applied.captured).toBeNull();
+    expect(applied.board[7][4]).toEqual({ type: "k", color: "w" });
+    const undone = undoMoveOnBoard(board, {
+      from: { row: 9, col: 9 },
+      to: { row: 0, col: 0 },
+      piece: { type: "p", color: "w" },
+      captured: null,
+    });
+    expect(undone[7][4]).toEqual({ type: "k", color: "w" });
+  });
+
 });

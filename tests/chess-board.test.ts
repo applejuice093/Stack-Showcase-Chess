@@ -4,6 +4,10 @@ import {
   copyBoard,
   findKing,
   toAlgebraic,
+  fromAlgebraic,
+  formatPly,
+  parsePly,
+  describePiece,
   getMoves,
   isInCheck,
   hasLegalMoves,
@@ -28,6 +32,53 @@ describe("board helpers", () => {
   it("toAlgebraic maps row/col to chess labels", () => {
     expect(toAlgebraic({ row: 7, col: 0 })).toBe("a1");
     expect(toAlgebraic({ row: 0, col: 4 })).toBe("e8");
+    expect(toAlgebraic({ row: -1, col: 0 })).toBe("??");
+  });
+
+  it("fromAlgebraic is the inverse of toAlgebraic on the board", () => {
+    expect(fromAlgebraic("e2")).toEqual({ row: 6, col: 4 });
+    expect(fromAlgebraic("a8")).toEqual({ row: 0, col: 0 });
+    expect(fromAlgebraic("h1")).toEqual({ row: 7, col: 7 });
+    expect(fromAlgebraic("e9")).toBeNull();
+    expect(fromAlgebraic("E2")).toBeNull();
+    expect(fromAlgebraic("")).toBeNull();
+    expect(fromAlgebraic("e2e4")).toBeNull();
+  });
+
+  it("formatPly writes coordinate notation, with a promotion suffix", () => {
+    expect(
+      formatPly({
+        from: { row: 6, col: 4 },
+        to: { row: 4, col: 4 },
+        piece: { type: "p", color: "w" },
+        captured: null,
+      })
+    ).toBe("e2e4");
+    expect(
+      formatPly({
+        from: { row: 1, col: 0 },
+        to: { row: 0, col: 0 },
+        piece: { type: "p", color: "w" },
+        captured: null,
+        promotion: "q",
+      })
+    ).toBe("a7a8q");
+    expect(
+      parsePly("e2e4")
+    ).toEqual({ from: { row: 6, col: 4 }, to: { row: 4, col: 4 } });
+    expect(parsePly("a7a8q")).toEqual({
+      from: { row: 1, col: 0 },
+      to: { row: 0, col: 0 },
+      promotion: "q",
+    });
+    expect(parsePly("e9e4")).toBeNull();
+    expect(parsePly("e2")).toBeNull();
+  });
+
+  it("describePiece names a piece for accessibility labels", () => {
+    expect(describePiece({ type: "p", color: "w" })).toBe("white pawn");
+    expect(describePiece({ type: "n", color: "b" })).toBe("black knight");
+    expect(describePiece(null)).toBe("empty");
   });
 });
 
